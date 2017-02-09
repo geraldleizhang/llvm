@@ -15,9 +15,11 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Dominators.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
+#include <iostream>
 using namespace llvm;
 using namespace std;
 
@@ -58,9 +60,16 @@ namespace {
     bool runOnFunction(Function &F) override {
       ++HelloCounter;
       int temp = 0;
+      int edges = 0;
       for (Function::iterator it = (&F)->begin(); it!=(&F)->end(); ++it){
         temp ++;
+        //cout<<(*it).size()<<endl;
+        TerminatorInst *T = it->getTerminator();
+        int succ = T->getNumSuccessors();
+        //errs() << succ <<'\n';
+        edges += succ;
       }
+      errs() << edges<<'\n';
       if (temp > max)
         max = temp;
       if (temp < min)
@@ -69,8 +78,13 @@ namespace {
       num ++;
 
       DominatorTree *DT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
-
-      LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
+      //DT->runOnFunction(&F);
+      //errs() << *DT << '\n';
+      Function::iterator it = F.begin();
+      BasicBlock *B0 = &*it++;
+      BasicBlock *B1 = &*it++;
+      //errs() << DT->dominates(B1, B0)<<'\n';
+      //LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
 
 
 
@@ -78,7 +92,7 @@ namespace {
       //printf("%d\n", num);
       //errs() << "Hello: ";
       //errs().write_escaped(F.getName()) << '\n';
-      print();
+      //print();
       return false;
     }
 
@@ -88,12 +102,14 @@ namespace {
     }
 
     // We don't modify the program, so we preserve all analyses.
-    //void getAnalysisUsage(AnalysisUsage &AU) const override {
-    //  AU.setPreservesAll();
-    //}
+    void getAnalysisUsage(AnalysisUsage &AU) const override {
+      AU.setPreservesAll();
+      AU.addRequired<DominatorTreeWrapperPass>();
+    }
   };
 }
 
 char basicblocks::ID = 0;
 static RegisterPass<basicblocks>
 Y("basicblocks", "Hello World Pass (with getAnalysisUsage implemented)");
+//INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
